@@ -1,0 +1,12 @@
+CC = g++
+
+elevator: elevator_emulation.cpp elevator.cpp
+	$(CC) -o $@ $^
+
+clean:
+	del elevator.exe
+
+test: 
+	./elevator $(TESTARGETS)
+
+.PHONY: lab3 clean test
