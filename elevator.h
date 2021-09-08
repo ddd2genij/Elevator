@@ -38,15 +38,15 @@ public:
 	int get_kol_of_floor_calls();
 	int get_capacity();
 	int get_people_in_elevator();
-	std::string get_message(); /*Pattern of message:1) Cabin on floor: N1. People in elevator: N2. Going up/down.<Press any key to enter new command>
-												    2) Cabin on floor: N1. Stopped. People in elevator: N2. Capacity: N3. Doors opened.*/
+	std::string get_message();		/*Pattern of message:1) Cabin on floor: N1. People in elevator: N2. Going up/down.<Press any key to enter new command>
+														 2) Cabin on floor: N1. Stopped. People in elevator: N2. Capacity: N3. Doors opened.*/
 	bool get_status();
 	int get_step();
 	int get_current_floor();
-	int get_target_floor();
-	int get_floor_call();
-	int get_is_target_floor(int);// -1 if not target otherwise position in queue
-	int get_is_floor_call(int);// -1 if not target otherwise position in queue
+	int get_target_floor(); //first from list of target_floors
+	int get_floor_call();	//first from list of floor_calls
+	int get_is_target_floor(int);	// -1 if not target otherwise position in queue
+	int get_is_floor_call(int);		// -1 if not target otherwise position in queue
 
 	~elevator();
 };

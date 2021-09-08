@@ -94,11 +94,11 @@ std::string elevator::get_message()
 	{
 		return "Cabin on floor : " + s1 + ". People in elevator : " + s2 + ". Going up. <Press any key to enter new command>\n";
 	}
-	else if (this->goUp)
+	else if (this->goDown)
 	{
 		return "Cabin on floor : " + s1 + ". People in elevator : " + s2 + ". Going down. <Press any key to enter new command>\n";
 	}
-	else if ((this->target_floors->size() !=0) or (this->floor_calls->size() != 0))
+	else if ((this->target_floors->size() != 0) or (this->floor_calls->size() != 0))
 	{
 		return "Cabin on floor : " + s1 + ". Stopped. People in elevator : " + s2 + ". Capacity : " + std::to_string(this->capacity) + ". Doors opened.\n";
 	}

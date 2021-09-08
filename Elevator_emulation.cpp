@@ -1,31 +1,33 @@
 ﻿#include <iostream>
-#include <Windows.h>
-#include <locale.h>
+//#include <Windows.h>
+//#include <locale.h>
 #include <string>
 #include <exception>
 #include <thread>
+#include <mutex>
 #include "elevator.h"
 
+static bool KEEP = false;               //controlling access to class data without mutex
 elevator movement_parameters{ 0,0 };
 
-void greetings();
-int get_property_number(std::string);
-int get_property_number(std::string, int,int, std::string, std::string);
-void get_commad_from_terminal();
-void boarding_to_elevator();
-void elevator_step();
+void greetings();                                                           //ssesion example and some information
+int get_property_number(std::string);                                       //getting data of required equivalence class
+int get_property_number(std::string, int,int, std::string, std::string);    
+void get_commad_from_terminal();                                            //Parallel stream function which make able to read commands at any time
+void boarding_to_elevator();                                                //provides correct boarding to elevator
+void elevator_step();                                                       //recalculation parameters of the elevator movement
 
 
 void boarding_to_elevator()
 {
     std::cout << movement_parameters.get_message();
     int current_amount = movement_parameters.get_people_in_elevator();
-    std::cout << " Amount of people who left the elevator:\n ";
-    int leaved_people = get_property_number(" Entered symbol isn't a number. Please try again.\n", 0, current_amount, " Amount of people can't be negative. Please try again.\n", " Number exceeds amount of people in the elvator. Please try again.\n");
-    std::cout << "Amount of people who enetered the elevator:\n ";
-    int entered_people = get_property_number(" Entered symbol isn't a number. Please try again.\n", 0, movement_parameters.get_capacity() - (current_amount - leaved_people), " Amount of people can't be negative. Please try again.\n", " Amount of people can't exceeds Capacity. Please try again.\n");
+    std::cout << "Amount of people who left the elevator: \n ";
+    int leaved_people = get_property_number("Entered symbol isn't a number. Please try again.\n", 0, current_amount, "Amount of people can't be negative. Please try again.\n", "Number exceeds amount of people in the elvator. Please try again.\n");
+    std::cout << "Amount of people who enetered the elevator: \n ";
+    int entered_people = get_property_number("Entered symbol isn't a number. Please try again.\n", 0, movement_parameters.get_capacity() - (current_amount - leaved_people), "Amount of people can't be negative. Please try again.\n", "Amount of people can't exceeds Capacity. Please try again.\n");
     movement_parameters.set_people_in_elevator(current_amount - leaved_people + entered_people);
-    if (current_amount - leaved_people + entered_people) 
+    if ((current_amount - leaved_people + entered_people) == 0)
     {
         movement_parameters.remove_target_floor(-1); //Removal all of clicks in cabine as the elevator is empty
     }
@@ -40,22 +42,24 @@ void elevator_step()
     int current_floor = movement_parameters.get_current_floor();
     int position_in_queue_cabin = movement_parameters.get_is_target_floor(current_floor);
     int position_in_queue_floor = movement_parameters.get_is_floor_call(current_floor);
+
     bool loading_flag = false;
 
-    if (position_in_queue_cabin != -1)
+    if ((position_in_queue_cabin != -1) or (position_in_queue_floor != -1))
     {
-        movement_parameters.remove_target_floor(position_in_queue_cabin);
         loading_flag = true;
     }
-    if (position_in_queue_floor != -1)
-    {
-        movement_parameters.remove_floor_calls(position_in_queue_floor);
-        loading_flag = true;
-    }
-
     if (loading_flag)
     {
         boarding_to_elevator();
+    }
+    if (position_in_queue_cabin != -1)
+    {
+        movement_parameters.remove_target_floor(position_in_queue_cabin);   
+    }
+    if (position_in_queue_floor != -1)
+    {
+        movement_parameters.remove_floor_calls(position_in_queue_floor);    // removing floors from target list upon reaching
     }
 
     int target_floor = 1;
@@ -65,11 +69,17 @@ void elevator_step()
         if (movement_parameters.get_kol_of_floor_calls() != 0)
         {
             target_floor = movement_parameters.get_floor_call();
+            movement_parameters.add_target_floor(target_floor);
+            movement_parameters.remove_floor_calls(0);
+        }
+        else if(current_floor != target_floor)
+        {
+            movement_parameters.add_target_floor(target_floor);
         }
     }
     else
     {
-        target_floor = movement_parameters.get_target_floor();
+        target_floor = movement_parameters.get_target_floor();      // recalculate target floor
     }
 
     if ((current_floor - target_floor) > 0)
@@ -80,84 +90,82 @@ void elevator_step()
     else if ((current_floor - target_floor) < 0)
     {
         movement_parameters.set_goUp(true);
-        std::cout << movement_parameters.get_message();
+        std::cout << movement_parameters.get_message();         //determine direction of movement
     }
 }
 
 void get_commad_from_terminal()
 {
-    std::string string_command;
-    /*
-    std::thread t1([&]() { std::cin >> string_command; });
-    std::this_thread::sleep_for(std::chrono::seconds(3));
-    t1.detach();
-    */
-    std::cin >> string_command;
-    if (string_command[0] == '*')
+    while (!movement_parameters.get_end_of_emulation())
     {
-        return;
-    }
-    char command = string_command[0];
-    if ((command != 'F') and (command != 'C') and (command != 'Q'))
-    {
-        std::cout << " Invalid command name. Please try again.\n";
-        return;
-    }
-    else 
-    {
-        try
+        if (KEEP)
         {
-            if (command == 'Q')
+            std::cin.clear();
+            std::string string_command;
+            std::cin >> string_command;
+            char command = string_command[0];
+            if ((command != 'F') and (command != 'C') and (command != 'Q'))
             {
-                movement_parameters.set_end_of_emulation(true);
-                return;
+                std::cout << "Invalid command name. Please try again.\n";
             }
-            int number = std::stoi(string_command.substr(1));
-            if (number > movement_parameters.get_count_of_floors())
+            else
             {
-                std::cout << " Impossibility of implimentation. Exceeds amount of floors in house. Please try again.\n";
-                return;
-            }
-            if (number < 1)
-            {
-                std::cout << " Number of floor can't be negative. Please try again.\n";
-                return;
-            }
-            if (command == 'F')
-            {
-                if (movement_parameters.get_is_floor_call(number)==-1)
+                try
                 {
-                    movement_parameters.add_floor_calls(number);
-                    return;
-                }
-            }
-            if (command == 'C')
-            {
-                if (movement_parameters.get_people_in_elevator() != 0)
-                {
-                    if (movement_parameters.get_is_target_floor(number)==-1)
+                    if (command == 'Q')
                     {
-                        movement_parameters.add_target_floor(number);
+                        movement_parameters.set_end_of_emulation(true);
                         return;
                     }
+                    // std::size_t* pos = 0;
+                    int number = std::stoi(string_command.substr(1, string_command.size() - 1));
+                    if (std::to_string(number).size() != (string_command.size() - 1))
+                    {
+                        throw std::exception();
+                    }
+                    if (number > movement_parameters.get_count_of_floors())
+                    {
+                        std::cout << "Impossibility of implimentation. Exceeds amount of floors in house. Please try again.\n";
+                    }
+                    else if (number < 1)
+                    {
+                        std::cout << "Number of floor can't be negative. Please try again.\n";
+                    }
+                    else if (command == 'F')
+                    {
+                        if (movement_parameters.get_is_floor_call(number) == -1)
+                        {
+                            movement_parameters.add_floor_calls(number);
+                        }
+                    }
+                    else if (command == 'C')
+                    {
+                        if (movement_parameters.get_people_in_elevator() != 0)
+                        {
+                            if (movement_parameters.get_is_target_floor(number) == -1)
+                            {
+                                movement_parameters.add_target_floor(number);
+                            }
+                        }
+                        else
+                        {
+                            std::cout << "Impossibility of implimentation. Elevator is empty. Please try again.\n";
+                        }
+                    }
                 }
-                else 
+                catch (std::exception e)
                 {
-                    std::cout << " Impossibility of implimentation. Elevator is empty. Please try again.\n";
-                    return;
+                    std::cout << "Invalid command name. Please try again.\n";
                 }
             }
-        }
-        catch (std::exception e)
-        {
-            std::cout << " Invalid command name. Please try again.\n";
-            return;
         }
     }
 }
 
 int get_property_number(std::string message_exception_string, int low, int high, std::string message_low, std::string message_high)
 {
+    std::cin.clear();
+    std::cout.clear();
     std::string number_string;
     int number;
     bool seccessful_reading = false;
@@ -167,6 +175,10 @@ int get_property_number(std::string message_exception_string, int low, int high,
         {
             std::cin >> number_string;
             number = std::stoi(number_string);
+            if (std::to_string(number).size() != number_string.size())
+            {
+                throw std::exception();
+            }
             if (number < low) 
             {
                 std::cout << message_low;
@@ -193,14 +205,25 @@ int get_property_number(std::string message)
     std::string number_string;
     int number;
     bool seccessful_reading = false;
+    std::cout << message;
     while (not seccessful_reading)
     {
         try
         {
-            std::cout << message;
             std::cin >> number_string;
             number = std::stoi(number_string);
-            seccessful_reading = true;
+            if (std::to_string(number).size() != number_string.size())
+            {
+                throw std::exception();
+            }
+            else if (number < 1)
+            {
+                std::cout << "Number can't be negative. Please try again.\n";
+            }
+            else
+            {
+                seccessful_reading = true;
+            }
         }
         catch (std::exception e)
         {
@@ -214,7 +237,7 @@ void greetings()
 {
     std::cout << "\t ...\n";
     std::cout << "Hello. It is an elevator emulator program.\n";
-    std::cout << "Elevator start position is 1 floor\n";
+    std::cout << "Elevator start position is 1 floor, and if there are no calls goes down to the first floor\n";
     std::cout << "To call on the floor, enter F and floor number(F5)\n";
     std::cout << "To call from cabin, enter c and floor number(C5)\n";
     std::cout << "Below is a fragment of a session with the program:\n" << "\n";
@@ -258,29 +281,34 @@ int main()
     greetings();
 
     int count, capacity;
-    bool default_position = true;
     count = get_property_number("Please enter count of floors\n");
     capacity = get_property_number("Please enter capacity of elevator\n");
 
     movement_parameters.set_capacity(capacity);
     movement_parameters.set_count_of_floors(count);
-    
+
+    std::thread first(get_commad_from_terminal);
+    first.detach();                                 // we let him go
+
+    bool default_position = true;
     while (!movement_parameters.get_end_of_emulation()) 
     {
-        get_commad_from_terminal();
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-        if (movement_parameters.get_status())
+        KEEP = false;
+        if (movement_parameters.get_status())   //+-1 floor
         {
             default_position = true;
             int current_floor = movement_parameters.get_current_floor() + movement_parameters.get_step();
             movement_parameters.set_current_floor(current_floor);
         }
-        else if (default_position)
+        else if (default_position)  // waiting for call
         {
-            std::cout << "Stopped on floor 1. Wating for a call\n";
+            std::cout << "Stopped on floor 1. Waiting for a call\n";
             default_position = false;
         }
         elevator_step();
+        KEEP = true;
+        std::this_thread::sleep_for(std::chrono::seconds(3)); // time of lift movement between floors
     }
+
 }
 
