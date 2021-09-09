@@ -3,6 +3,7 @@
 
 elevator::elevator(int capacity,int count_of_floors)
 {
+	this->first_priority_floor = 0;
 	this->end_of_emulation = false;
 	this->goUp = false;
 	this->goDown = false;
@@ -12,6 +13,16 @@ elevator::elevator(int capacity,int count_of_floors)
 	this->current_floor = 1;
 	this->target_floors = new std::vector<int>(0);
 	this->floor_calls = new std::vector<int>(0);
+}
+
+void elevator::set_status_door(std::string status) 
+{
+	this->status_door = status;
+}
+
+void elevator::set_first_priority_floor(int number)
+{
+	this->first_priority_floor = number;
 }
 
 void elevator::set_capacity(int kol)
@@ -76,6 +87,11 @@ void elevator::remove_floor_calls(int position)
 	this->floor_calls->erase(this->floor_calls->begin() + position);
 }
 
+int elevator::get_first_priority_floor()
+{
+	return this->first_priority_floor;
+}
+
 int elevator::get_count_of_floors()
 {
 	return this->count_of_floors;
@@ -98,13 +114,9 @@ std::string elevator::get_message()
 	{
 		return "Cabin on floor : " + s1 + ". People in elevator : " + s2 + ". Going down. <Press any key to enter new command>\n";
 	}
-	else if ((this->target_floors->size() != 0) or (this->floor_calls->size() != 0))
-	{
-		return "Cabin on floor : " + s1 + ". Stopped. People in elevator : " + s2 + ". Capacity : " + std::to_string(this->capacity) + ". Doors opened.\n";
-	}
 	else
 	{
-		return "Cabin on floor : " + s1 + ". Stopped. People in elevator : " + s2 + ". Capacity : " + std::to_string(this->capacity) + ". Doors closed.\n";
+		return "Cabin on floor : " + s1 + ". Stopped. People in elevator : " + s2 + ". Capacity : " + std::to_string(this->capacity) + this->status_door;
 	}
 }
 

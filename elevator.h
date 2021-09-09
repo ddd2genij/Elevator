@@ -10,16 +10,22 @@ private:
 	bool goDown;
 	bool end_of_emulation;
 
+
 	int capacity;
 	int people_in_elevator;
 	int count_of_floors;
 	int current_floor;
+	int first_priority_floor; //target of movement
+
 	std::vector<int>*  target_floors; //first priority queue(peressing in cabin)
 	std::vector<int>* floor_calls;  //second priority queue(peressing on floors)
+	std::string status_door;
 
 public:
 	elevator(int,int);
 
+	void set_status_door(std::string);
+	void set_first_priority_floor(int); //if isnt anyting calls 0;
 	void set_capacity(int);
 	void set_count_of_floors(int);
 	void set_end_of_emulation(bool);
@@ -32,6 +38,7 @@ public:
 	void add_floor_calls(int);
 	void remove_floor_calls(int); 
 	
+	int get_first_priority_floor();
 	bool get_end_of_emulation();
 	int get_count_of_floors();
 	int get_kol_of_target_floors();
